@@ -1,4 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+
 export enum UserRole {
     STUDENT = 'student',
     INSTRUCTOR = 'instructor',

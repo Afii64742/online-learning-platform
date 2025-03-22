@@ -6,9 +6,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { User } from 'src/modals/User.entity';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([User]), // Import User entity
     ConfigModule, // Import ConfigModule to enable .env access
     UserModule,
     PassportModule,
@@ -23,5 +26,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
+  exports:[AuthService],   // ✅ Export if used in other modules
 })
 export class AuthModule {}
