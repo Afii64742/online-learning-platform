@@ -1,83 +1,125 @@
-import { Controller, Post, Body, Get,Put, Param, NotFoundException, Request, Delete, UseGuards, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Post, Body, Get, Put, Param, Request, Delete, UseGuards, UseInterceptors, UploadedFile, UploadedFiles } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from 'src/DTOs/create-course-dto';
-import { NotFoundError } from 'rxjs';
 import { UpdateCourseDto } from 'src/DTOs/update-course-dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Roles } from 'src/guards/roles.decorator';
+import { FileInterceptor,FilesInterceptor,AnyFilesInterceptor  } from '@nestjs/platform-express';
+import { S3Service } from 'src/services/s3.service';
+
 @Controller('course')
 export class CourseController {
-    constructor(private readonly courseService:CourseService){}
+    constructor(private readonly courseService: CourseService, private readonly s3Service: S3Service) {}
 
-    //Create Course
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('instructor')
-    @Post('create')
-    async createCourse(@Body() createCourseDto: CreateCourseDto,  @Request() req) {
-        try {
-           
-            createCourseDto.instructorId = req.user.userId;
-            const course = await this.courseService.createCourse(createCourseDto);
-            return course;
-        } catch (error) {
-            throw new InternalServerErrorException(error.message);
+@Roles('instructor')
+@Post('create')
+@UseInterceptors(AnyFilesInterceptor())  // ✅ Handles both video and materials
+async createCourse(
+    @Body() createCourseDto: CreateCourseDto, 
+    @UploadedFiles() files: Express.Multer.File[],  // ✅ Get all uploaded files as an array
+    @Request() req
+) {
+    try {
+        createCourseDto.instructorId = req.user.userId;
+        
+        // Extract video and materials from files array
+        let videoFile: Express.Multer.File | undefined;
+        let materialFiles: Express.Multer.File[] = [];
+
+        files.forEach(file => {
+            if (file.fieldname === 'video') {
+                videoFile = file; // Single video file
+            } else if (file.fieldname === 'materials') {
+                materialFiles.push(file); // Multiple material files
+            }
+        });
+
+        // ✅ Upload video to S3
+        if (videoFile) {
+            const videoUrl = await this.s3Service.uploadFile(videoFile, 'course-videos');
+            createCourseDto.videoUrl = videoUrl;
         }
+
+        // ✅ Upload materials to S3
+        if (materialFiles.length > 0) {
+            createCourseDto.materials = await Promise.all(
+                materialFiles.map(file => this.s3Service.uploadFile(file, 'course-materials'))
+            );
+        }
+
+        const course = await this.courseService.createCourse(createCourseDto);
+        return course;
+    } catch (error) {
+        throw new Error(error.message);
     }
+}
 
-    // GET ALL COURSES 
+    
 
+    // ✅ Get All Courses
     @Get('all')
     async getAllCourses() {
-        try {
-            return await this.courseService.getAllCourses(); // ✅ No need for extra wrapping
-        } catch (error) {
-            throw new InternalServerErrorException(error.message);
-        }
+        return await this.courseService.getAllCourses();
     }
 
-    //GET COURSE BY ID
-
+    // ✅ Get Course by ID
     @Get('find/:id')
-    async searchCourseById(@Param('id') id:number){
-     try{
-      const course = await this.courseService.getCourseById(id);
-      return course
-
-     }catch(error){
-        throw new InternalServerErrorException(error.message);
-     }
+    async searchCourseById(@Param('id') id: number) {
+        return await this.courseService.getCourseById(id);
     }
 
-     // 🔹 Update Course - Only Instructors can update
-
+    // ✅ Update Course with File Upload
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('instructor')
     @Put('update/:id')
-    async updateCourse(@Param('id') id:number, @Body() updateCourseDto:UpdateCourseDto,  @Request() req){
-        try{
+    @UseInterceptors(AnyFilesInterceptor())  // ✅ Handles both video and materials
+    async updateCourse(
+        @Param('id') id: number, 
+        @Body() updateCourseDto: UpdateCourseDto, 
+        @UploadedFiles() files: Express.Multer.File[],  // ✅ Get all uploaded files as an array
+        @Request() req
+    ) {
+        try {
             const instructorId = req.user.userId;
-            const updatedCourse = await this.courseService.updateCourse(id, updateCourseDto, instructorId);
-             return updatedCourse;
-        }catch(error){
-            throw new InternalServerErrorException(error.message);
+
+               // Extract video and materials from files array
+        let videoFile: Express.Multer.File | undefined;
+        let materialFiles: Express.Multer.File[] = [];
+
+        files.forEach(file => {
+            if (file.fieldname === 'video') {
+                videoFile = file; // Single video file
+            } else if (file.fieldname === 'materials') {
+                materialFiles.push(file); // Multiple material files
+            }
+        });
+
+        // ✅ Upload video to S3
+        if (videoFile) {
+            const videoUrl = await this.s3Service.uploadFile(videoFile, 'course-videos');
+            updateCourseDto.videoUrl = videoUrl;
+        }
+
+        // ✅ Upload materials to S3
+        if (materialFiles.length > 0) {
+            updateCourseDto.materials = await Promise.all(
+                materialFiles.map(file => this.s3Service.uploadFile(file, 'course-materials'))
+            );
+        }
+
+            return await this.courseService.updateCourse(id, updateCourseDto, instructorId);
+        } catch (error) {
+            throw new Error(error.message);
         }
     }
 
-
-     // 🔹 Delete Course - Only Admins and Instructors can delete
-
+    // ✅ Delete Course
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin', 'instructor')
     @Delete('delete/:id')
-    async deleteCourse(@Param('id') id:number){
-        try{
-            const course = await this.courseService.deleteCourse(id);
-            return{
-                message: 'Course deleted successfully',
-            }
-        }catch(error){
-            throw new InternalServerErrorException(error.message);
-        }
+    async deleteCourse(@Param('id') id: number) {
+        return await this.courseService.deleteCourse(id);
     }
 }

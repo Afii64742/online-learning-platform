@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { ConfigModule } from '@nestjs/config';
 import { CourseModule } from './course/course.module';
+import {S3Service} from './services/s3.service';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CourseModule } from './course/course.module';
     CourseModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,S3Service],
+  exports: [S3Service],
 })
 export class AppModule {}

@@ -3,11 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Course } from 'src/modals/Course.entity';
 import { CourseService } from './course.service';
 import { CourseController } from './course.controller';
+import { S3Service } from 'src/services/s3.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Course])], // Registering Course entity
   controllers: [CourseController], // Declaring the controller
-  providers: [CourseService], // Declaring the service
+  providers: [CourseService, S3Service], // Declaring the service
   exports: [CourseService] // Exporting for use in other modules if needed
 })
 export class CourseModule {}
