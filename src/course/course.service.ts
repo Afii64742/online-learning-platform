@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import {ILike} from 'typeorm';
 import { Repository } from 'typeorm';
 import { Course } from 'src/modals/Course.entity';
 import { CreateCourseDto } from 'src/DTOs/create-course-dto';
@@ -64,6 +65,27 @@ export class CourseService {
             throw new InternalServerErrorException('Failed to retrieve course');
         }
     }
+
+     // ✅ GET SEARCHED COURSE BY TITLE
+    async getCourseByTitle(title:string){
+        console.log("title testing=>", title)
+        try{
+            const searchedCourse = await this.courseRepository.find({
+                where: { title: ILike(`%${title}%`) }, // Case-insensitive search
+              });
+              if(!searchedCourse){
+                  throw new NotFoundException(`Course with title ${title} not found`);
+              }
+              return {
+                    message: 'Course retrieved successfully',
+                    searchedCourse
+              }
+        }catch(error){
+            throw new InternalServerErrorException('Failed to retrieve course');
+        }
+    }
+
+    // ✅ GET SEARCHED COURSE BY INSTRUCTOR NAME
 
     // ✅ UPDATE COURSE
     async updateCourse(id: number, updateCourseDto: UpdateCourseDto, instructorId: number) {

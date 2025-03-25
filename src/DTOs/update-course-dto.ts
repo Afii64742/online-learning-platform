@@ -1,21 +1,21 @@
-import {IsString, IsNumber, IsOptional, IsArray, IsUrl } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, IsUrl, IsBoolean } from 'class-validator';
 
 export class UpdateCourseDto {
   @IsOptional()
   @IsString()
-  title: string;
+  title?: string;
 
   @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
   @IsOptional()
   @IsNumber()
-  price: number;
+  price?: number;
 
   @IsOptional()
   @IsString()
-  category: string;
+  category?: string;
 
   @IsOptional()
   @IsUrl()
@@ -23,6 +23,15 @@ export class UpdateCourseDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true }) // Ensures every element in the array is a string
+  @IsString({ each: true })
   materials?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];  // 🔹 Tags
+
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;  // 🔹 Free or Paid
 }

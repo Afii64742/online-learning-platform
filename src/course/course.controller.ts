@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Put, Param, Request, Delete, UseGuards, UseInterceptors, UploadedFile, UploadedFiles } from '@nestjs/common';
+import { Controller, Post, Body, Get, Put, Param,Query, Request, Delete, UseGuards, UseInterceptors, UploadedFile, UploadedFiles } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from 'src/DTOs/create-course-dto';
 import { UpdateCourseDto } from 'src/DTOs/update-course-dto';
@@ -7,6 +7,7 @@ import { RolesGuard } from 'src/guards/roles.guard';
 import { Roles } from 'src/guards/roles.decorator';
 import { FileInterceptor,FilesInterceptor,AnyFilesInterceptor  } from '@nestjs/platform-express';
 import { S3Service } from 'src/services/s3.service';
+import { title } from 'process';
 
 @Controller('course')
 export class CourseController {
@@ -69,6 +70,12 @@ async createCourse(
     async searchCourseById(@Param('id') id: number) {
         return await this.courseService.getCourseById(id);
     }
+
+    //SEARCH COURSE BY TITLE    
+    @Get('search')
+          async searchCourseByTitle(@Query('title') title: string) {
+          return await this.courseService.getCourseByTitle(title);
+     }
 
     // ✅ Update Course with File Upload
     @UseGuards(JwtAuthGuard, RolesGuard)

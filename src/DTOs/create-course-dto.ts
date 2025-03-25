@@ -1,14 +1,13 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsArray, IsUrl, IsBoolean } from 'class-validator';
 
 export class CreateCourseDto {
   @IsNotEmpty()
   @IsString()
   title: string;
 
-
   @IsNotEmpty()
   @IsNumber()
-  instructorId: number; 
+  instructorId: number;
 
   @IsNotEmpty()
   @IsString()
@@ -28,6 +27,15 @@ export class CreateCourseDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true }) // Ensures every element in the array is a string
+  @IsString({ each: true })
   materials?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];  // 🔹 Tags for better search & recommendations
+
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;  // 🔹 If course is free or paid
 }
